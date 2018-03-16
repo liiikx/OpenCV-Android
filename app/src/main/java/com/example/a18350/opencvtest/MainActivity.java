@@ -22,6 +22,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -29,8 +30,13 @@ import org.opencv.imgproc.Imgproc;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
+import static org.opencv.core.Core.rectangle;
+import static org.opencv.core.CvType.CV_8UC3;
 import static org.opencv.imgproc.Imgproc.CHAIN_APPROX_SIMPLE;
+import static org.opencv.imgproc.Imgproc.approxPolyDP;
+import static org.opencv.imgproc.Imgproc.boundingRect;
 
 public class MainActivity extends AppCompatActivity {
     private double max_size = 1024;
@@ -72,21 +78,83 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void process() {
+        //灰度图片
         convert2Gray();
         sobel();
+        //二值化
         blurAndThreshold();
         step4();
-        step5();
+        //查找轮廓绘制矩形
+        findContours();
+//        step5();
+    }
+
+    private void findContours() {
+        Mat src = new Mat();
+        Mat dst = new Mat();
+        Mat temp = new Mat();
+
+        Utils.bitmapToMat(selectbp, src);
+        Imgproc.cvtColor(src, temp, Imgproc.COLOR_BGRA2BGR);
+        Imgproc.cvtColor(temp, dst, Imgproc.COLOR_BGR2GRAY);
+
+        List<MatOfPoint> contours = new ArrayList<>();
+        Mat hierarchy = new Mat();
+        //轮廓检测
+        Imgproc.findContours(dst, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        List<MatOfPoint2f> newContours = new ArrayList<>();
+        for (MatOfPoint point : contours) {
+            MatOfPoint2f newPoint = new MatOfPoint2f(point.toArray());
+            newContours.add(newPoint);
+        }
+        //绘制轮廓
+        Mat result =new Mat(dst.size(), CV_8UC3, new Scalar(0));
+        Imgproc.drawContours(result, contours, -1, new Scalar(255,255,255), 1);
+        Mat result_boundingRect = result.clone();
+
+        //conPoint存储计算得到的外接多边形
+        Vector<Vector<MatOfPoint2f>> conPoint =new Vector<>();
+        conPoint.setSize(contours.size());
+
+        //boundRect存储计算得到的最小立式矩形
+        Vector<Rect> boundRect = new Vector<>();
+        boundRect.setSize(contours.size());
+
+        for (int i = 0; i < contours.size(); i++)
+        {
+
+//           // 计算外接多边形
+//          conPoint.set(i,approxPolyDP(newContours.get(i), conPoint.get(i).get(i), 3, true);
+
+            // 计算最小外接立式矩形
+            boundRect.set(i, boundingRect(contours.get(i)));
+        }
+
+        for (int i = 0; i< contours.size(); i++)
+        {
+            Scalar color = new Scalar(0, 255, 255);
+            // 绘制最小外接立式矩形
+            rectangle(result_boundingRect, boundRect.get(i).tl(), boundRect.get(i).br(), color, 5, 8, 0);
+
+        }
+        Utils.matToBitmap(result_boundingRect, selectbp);
+        myImageView.setImageBitmap(selectbp);
     }
 
     private void step5() {
         Mat src = new Mat();
         Mat dst = new Mat();
-        Utils.bitmapToMat(selectbp, src);
+        Mat temp = new Mat();
+        Mat img = new Mat();
 
-        List<MatOfPoint> matOfPoints = new ArrayList<>();
+        Utils.bitmapToMat(selectbp, src);
+        Imgproc.cvtColor(src,temp,Imgproc.COLOR_BGRA2BGR);
+        Imgproc.cvtColor(temp, img, Imgproc.COLOR_BGR2GRAY);
+
+        List<MatOfPoint> matOfPoints = new ArrayList<MatOfPoint>();
         Mat hierarchy = new Mat();
-        Imgproc.findContours(src, matOfPoints, hierarchy, Imgproc.RETR_CCOMP, CHAIN_APPROX_SIMPLE);
+        Imgproc.findContours(img, matOfPoints, hierarchy, Imgproc.RETR_CCOMP, CHAIN_APPROX_SIMPLE);
 
         MatOfPoint2f matOfPoint2fSrc = null, matOfPoint2fDst = null;
         Scalar scalar = new Scalar(0, 255, 0);
@@ -96,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
             MatOfPoint matOfPoint = matOfPoints.get(i);
 
             matOfPoint.convertTo(matOfPoint2fSrc,CvType.CV_32FC2);
-            Imgproc.approxPolyDP(matOfPoint2fSrc,matOfPoint2fDst,0.01*Imgproc.arcLength(matOfPoint2fSrc,true),true);
+            approxPolyDP(matOfPoint2fSrc,matOfPoint2fDst,0.01*Imgproc.arcLength(matOfPoint2fSrc,true),true);
 
             matOfPoint2fDst.convertTo(matOfPoint,CvType.CV_32S);
             Imgproc.drawContours(dst, matOfPoints, i, scalar, 2, 8, hierarchy, 0, new Point());
@@ -165,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
         Mat mat = new Mat();
         Utils.bitmapToMat(selectbp, src);
         Imgproc.cvtColor(src, temp, Imgproc.COLOR_BGRA2BGR);
-        Log.i("CV", "image type:" + (temp.type() == CvType.CV_8UC3));
+        Log.i("CV", "image type:" + (temp.type() == CV_8UC3));
         Imgproc.cvtColor(temp, dst, Imgproc.COLOR_BGR2GRAY);
         Imgproc.Canny(dst, mat, 60, 180);
         Utils.matToBitmap(mat, selectbp);
