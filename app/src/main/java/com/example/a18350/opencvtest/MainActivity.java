@@ -10,75 +10,187 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Point;
+import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.opencv.imgproc.Imgproc.CHAIN_APPROX_SIMPLE;
 
 public class MainActivity extends AppCompatActivity {
     private double max_size = 1024;
     private int PICK_IMAGE_REQUEST = 1;
     private ImageView myImageView;
     private Bitmap selectbp;
-    private static final String TAG = "tag";
+    private static final String TAG = "OpenCV4Android";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-//        staticLoadCVLibraries();
-        myImageView = (ImageView)findViewById(R.id.imageView);
-        myImageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        Button selectImageBtn = (Button)findViewById(R.id.select);
+        myImageView = (ImageView) findViewById(R.id.imageView);
+        myImageView.setScaleType(ImageView.ScaleType.CENTER);
+        Button selectImageBtn = (Button) findViewById(R.id.select);
         selectImageBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // makeText(MainActivity.this.getApplicationContext(), "start to browser image", Toast.LENGTH_SHORT).show();
+//                makeText(MainActivity.this.getApplicationContext(), "start to browser image", Toast.LENGTH_SHORT).show();
                 selectImage();
             }
         });
 
-        Button processBtn = (Button)findViewById(R.id.process);
+        Button processBtn = (Button) findViewById(R.id.process);
         processBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // makeText(MainActivity.this.getApplicationContext(), "hello, image process", Toast.LENGTH_SHORT).show();
-                convertGray();
+//                // makeText(MainActivity.this.getApplicationContext(), "hello, image process", Toast.LENGTH_SHORT).show();
+//                convertGray();
+//                findThreshold();
+//                Mat img = new Mat();
+//                Utils.bitmapToMat(selectbp,img);
+//                //adjustImage(img,300);
+//                //isTextImage(selectbp, selectbp.getWidth(), selectbp.getHeight());
+                process();
             }
         });
 
     }
 
-//    //OpenCV库静态加载并初始化
-//    private void staticLoadCVLibraries(){
-//        boolean load = OpenCVLoader.initDebug();
-//        if(load) {
-//            Log.i("CV", "Open CV Libraries loaded...");
-//        }
-//    }
+    private void process() {
+        convert2Gray();
+        sobel();
+        blurAndThreshold();
+        step4();
+        step5();
+    }
+
+    private void step5() {
+        Mat src = new Mat();
+        Mat dst = new Mat();
+        Utils.bitmapToMat(selectbp, src);
+
+        List<MatOfPoint> matOfPoints = new ArrayList<>();
+        Mat hierarchy = new Mat();
+        Imgproc.findContours(src, matOfPoints, hierarchy, Imgproc.RETR_CCOMP, CHAIN_APPROX_SIMPLE);
+
+        MatOfPoint2f matOfPoint2fSrc = null, matOfPoint2fDst = null;
+        Scalar scalar = new Scalar(0, 255, 0);
+        //Imgproc.minAreaRect()
+
+        for (int i = 0; i < matOfPoints.size(); i++) {
+            MatOfPoint matOfPoint = matOfPoints.get(i);
+
+            matOfPoint.convertTo(matOfPoint2fSrc,CvType.CV_32FC2);
+            Imgproc.approxPolyDP(matOfPoint2fSrc,matOfPoint2fDst,0.01*Imgproc.arcLength(matOfPoint2fSrc,true),true);
+
+            matOfPoint2fDst.convertTo(matOfPoint,CvType.CV_32S);
+            Imgproc.drawContours(dst, matOfPoints, i, scalar, 2, 8, hierarchy, 0, new Point());
+        }
+
+        Utils.matToBitmap(dst,selectbp);
+        myImageView.setImageBitmap(selectbp);
+    }
+
+    private void step4() {
+        Mat src = new Mat();
+        Mat dst = new Mat();
+        Utils.bitmapToMat(selectbp, src);
+
+        Mat structuringElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(25, 25));
+        Imgproc.morphologyEx(src, dst, Imgproc.MORPH_CLOSE, structuringElement);
+
+        Utils.matToBitmap(dst,selectbp);
+        myImageView.setImageBitmap(selectbp);
+    }
+
+    private void blurAndThreshold() {
+        Mat src = new Mat();
+        Mat tmp = new Mat();
+        Mat dst = new Mat();
+        Utils.bitmapToMat(selectbp, src);
+
+        Imgproc.blur(src, tmp, new Size(9, 9));
+        Imgproc.threshold(tmp, dst, 40, 255, Imgproc.THRESH_BINARY);
+
+        Utils.matToBitmap(dst,selectbp);
+        myImageView.setImageBitmap(selectbp);
+    }
+
+    private void sobel() {
+        Mat src = new Mat();
+        Mat gx = new Mat();
+        Mat gy = new Mat();
+        Mat dst = new Mat();
+        Utils.bitmapToMat(selectbp, src);
+
+        Imgproc.Sobel(src,gx,-1,1,0);//x方向求导
+        Imgproc.Sobel(src,gy,-1,0,1);//x方向求导
+        Core.addWeighted(gx,0.5,gy,0.5,0,dst);
+        Utils.matToBitmap(dst,selectbp);
+        myImageView.setImageBitmap(selectbp);
+    }
+
+    private void convert2Gray() {
+        Mat src = new Mat();
+        Mat temp = new Mat();
+        Mat dst = new Mat();
+        Utils.bitmapToMat(selectbp, src);
+
+        Imgproc.cvtColor(src,temp,Imgproc.COLOR_BGRA2BGR);
+        Imgproc.cvtColor(temp, dst, Imgproc.COLOR_BGR2GRAY);
+
+        Utils.matToBitmap(dst, selectbp);
+        myImageView.setImageBitmap(selectbp);
+    }
 
     private void convertGray() {
         Mat src = new Mat();
         Mat temp = new Mat();
         Mat dst = new Mat();
+        Mat mat = new Mat();
         Utils.bitmapToMat(selectbp, src);
         Imgproc.cvtColor(src, temp, Imgproc.COLOR_BGRA2BGR);
         Log.i("CV", "image type:" + (temp.type() == CvType.CV_8UC3));
         Imgproc.cvtColor(temp, dst, Imgproc.COLOR_BGR2GRAY);
-        Utils.matToBitmap(dst, selectbp);
+        Imgproc.Canny(dst, mat, 60, 180);
+        Utils.matToBitmap(mat, selectbp);
+        myImageView.setImageBitmap(selectbp);
+    }
+
+    private void findThreshold() {
+        Mat dst = new Mat();
+        Mat src = new Mat();
+        Utils.bitmapToMat(selectbp, src);
+        Imgproc.threshold(src, dst, 0, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C);
+
+        Mat img = new Mat();
+        Size size = new Size(640, 480);
+        Imgproc.resize(dst, img, new Size(dst.width() * 1.5f, dst.height() * 1f));
+
+        //Imgproc.resize(dst, img, size, 0.5, 0.5, Imgproc.INTER_AREA);
+        Utils.matToBitmap(img, selectbp);
         myImageView.setImageBitmap(selectbp);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
             Uri uri = data.getData();
             try {
                 Log.d("image-tag", "start to decode selected image now...");
@@ -92,11 +204,11 @@ public class MainActivity extends AppCompatActivity {
                 int newWidth = raw_width;
                 int newHeight = raw_height;
                 int inSampleSize = 1;
-                if(max > max_size) {
+                if (max > max_size) {
                     newWidth = raw_width / 2;
                     newHeight = raw_height / 2;
-                    while((newWidth/inSampleSize) > max_size || (newHeight/inSampleSize) > max_size) {
-                        inSampleSize *=2;
+                    while ((newWidth / inSampleSize) > max_size || (newHeight / inSampleSize) > max_size) {
+                        inSampleSize *= 2;
                     }
                 }
 
@@ -117,7 +229,7 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent();
         intent.setType("image/*");
         intent.setAction(Intent.ACTION_GET_CONTENT);
-        startActivityForResult(Intent.createChooser(intent,"选择图像..."), PICK_IMAGE_REQUEST);
+        startActivityForResult(Intent.createChooser(intent, "选择图像..."), PICK_IMAGE_REQUEST);
     }
 
     //openCV4Android 需要加载用到
@@ -127,7 +239,7 @@ public class MainActivity extends AppCompatActivity {
             switch (status) {
                 case LoaderCallbackInterface.SUCCESS: {
                     Log.i(TAG, "OpenCV loaded successfully");
-                    //mOpenCvCameraView.enableView();
+                    //  mOpenCvCameraView.enableView();
 //                    mOpenCvCameraView.setOnTouchListener(ColorBlobDetectionActivity.this);
                 }
                 break;
@@ -141,6 +253,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
+        System.out.println("likexin");
         super.onResume();
         if (!OpenCVLoader.initDebug()) {
             Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
@@ -149,5 +262,33 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
+    }
+
+    boolean isTextImage(Bitmap bitmap, int width, int height) {
+        int y = 0;
+        int line = 0;
+        while (y < height) {
+            int x = 0;
+            int whiteNum = 0;
+            while (x < width) {
+                int pixel = bitmap.getPixel(x, y);
+                if (pixel == -1) {
+                    whiteNum++;
+                }
+                x++;
+            }
+            float scale = whiteNum / x;
+            if (scale > 0.15) {
+                line++;
+            }
+            y += 10;
+        }
+        float ratio = line / height;
+        if (ratio > 0.4 && ratio < 1.0) {
+            Log.d(TAG, "isTextImage: 是是是是是是是！！");
+            return true;
+        }
+        Log.d(TAG, "isTextImage: 不是嘤嘤嘤");
+        return false;
     }
 }
