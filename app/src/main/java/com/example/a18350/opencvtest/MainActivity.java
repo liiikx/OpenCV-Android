@@ -3,46 +3,71 @@ package com.example.a18350.opencvtest;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.Toast;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+
+import com.yuyh.library.imgsel.ISNav;
+import com.yuyh.library.imgsel.config.ISListConfig;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
+import org.opencv.core.RotatedRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Vector;
 
-import static org.opencv.core.Core.rectangle;
+import cn.lemon.multi.MultiView;
+
+import static org.opencv.core.CvType.CV_32F;
 import static org.opencv.core.CvType.CV_8UC3;
-import static org.opencv.imgproc.Imgproc.CHAIN_APPROX_SIMPLE;
-import static org.opencv.imgproc.Imgproc.approxPolyDP;
+import static org.opencv.imgproc.Imgproc.COLOR_BGR2GRAY;
+import static org.opencv.imgproc.Imgproc.COLOR_BGRA2BGR;
+import static org.opencv.imgproc.Imgproc.INTER_LINEAR;
+import static org.opencv.imgproc.Imgproc.THRESH_BINARY;
 import static org.opencv.imgproc.Imgproc.boundingRect;
+import static org.opencv.imgproc.Imgproc.rectangle;
+import static org.opencv.imgproc.Imgproc.resize;
 
 public class MainActivity extends AppCompatActivity {
     private double max_size = 1024;
     private int PICK_IMAGE_REQUEST = 1;
+    private int REQUEST_LIST_CODE = 2;
     private ImageView myImageView;
+    private ListView mListView;
+    private MultiView multiView;
     private Bitmap selectbp;
+
+    private List<Bitmap> selectImageList;
     private static final String TAG = "OpenCV4Android";
 
     @Override
@@ -51,12 +76,69 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         myImageView = (ImageView) findViewById(R.id.imageView);
         myImageView.setScaleType(ImageView.ScaleType.CENTER);
+
+        mListView = (ListView) findViewById(R.id.listView);
+        mListView.setItemsCanFocus(false);
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                System.out.println(position);
+
+                System.out.println(id);
+            }
+        });
+
+        multiView = (MultiView) findViewById(R.id.multi_view);
+        multiView.setLayoutParams(new LinearLayout.LayoutParams(900, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+
         Button selectImageBtn = (Button) findViewById(R.id.select);
         selectImageBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                makeText(MainActivity.this.getApplicationContext(), "start to browser image", Toast.LENGTH_SHORT).show();
                 selectImage();
+            }
+        });
+
+        Button multipleSelectBtn = (Button) findViewById(R.id.multipleSelect);
+        multipleSelectBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                selectMultipleImage();
+            }
+
+            private void selectMultipleImage() {
+                // 自由配置选项
+                ISListConfig config = new ISListConfig.Builder()
+                        // 是否多选, 默认true
+                        .multiSelect(true)
+                        // 是否记住上次选中记录, 仅当multiSelect为true的时候配置，默认为true
+                        .rememberSelected(false)
+                        // “确定”按钮背景色
+                        .btnBgColor(Color.GRAY)
+                        // “确定”按钮文字颜色
+                        .btnTextColor(Color.BLUE)
+                        // 使用沉浸式状态栏
+                        .statusBarColor(Color.parseColor("#3F51B5"))
+                        // 返回图标ResId
+                        //.backResId(android.support.v7.appcompat.R.drawable.abc_ic_ab_back_mtrl_am_alpha)
+                        // 标题
+                        .title("图片")
+                        // 标题文字颜色
+                        .titleColor(Color.WHITE)
+                        // TitleBar背景色
+                        .titleBgColor(Color.parseColor("#3F51B5"))
+                        // 裁剪大小。needCrop为true的时候配置
+                        .cropSize(1, 1, 200, 200)
+                        .needCrop(true)
+                        // 第一个是否显示相机，默认true
+                        .needCamera(false)
+                        // 最大选择图片数量，默认9
+                        .maxNum(9)
+                        .build();
+
+                // 跳转到图片选择器
+                ISNav.getInstance().toListActivity(MainActivity.this, config, REQUEST_LIST_CODE);
             }
         });
 
@@ -64,44 +146,133 @@ public class MainActivity extends AppCompatActivity {
         processBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                // makeText(MainActivity.this.getApplicationContext(), "hello, image process", Toast.LENGTH_SHORT).show();
-//                convertGray();
-//                findThreshold();
-//                Mat img = new Mat();
-//                Utils.bitmapToMat(selectbp,img);
-//                //adjustImage(img,300);
-//                //isTextImage(selectbp, selectbp.getWidth(), selectbp.getHeight());
-                process();
+                //process();
+                innerProcess();
             }
         });
-
     }
 
+    //选多张图片，嘤不会用
     private void process() {
-        //灰度图片
-        convert2Gray();
-        sobel();
-        //二值化
-        blurAndThreshold();
-        step4();
-        //查找轮廓绘制矩形
-        findContours();
-//        step5();
+        List<Bitmap> selectImageList = this.selectImageList;
+
+        List<Bitmap> result = new ArrayList<>();
+        for (Bitmap bitmap : selectImageList) {
+            this.selectbp = bitmap;
+            innerProcess();
+        }
+
+//        this.selectImageList = result;
+//
+//        multiView.clear();
+//        multiView.setBitmaps(this.selectImageList);
     }
 
-    private void findContours() {
+    private void innerProcess() {
+        Mat origin = new Mat();
+        Utils.bitmapToMat(selectbp, origin);
+        gray();
+        sobel();
+        blurAndThreshold();
+        structure();
+        erodeAndDilate();
+        Bitmap finalBitmap = findContours(origin);
+
+        myImageView.setImageBitmap(finalBitmap);
+    }
+
+    //灰度
+    private void gray() {
         Mat src = new Mat();
+        Mat grayTemp = new Mat();
         Mat dst = new Mat();
-        Mat temp = new Mat();
 
         Utils.bitmapToMat(selectbp, src);
+
+        Imgproc.cvtColor(src, grayTemp, Imgproc.COLOR_BGRA2BGR);
+        Imgproc.cvtColor(grayTemp, dst, Imgproc.COLOR_BGR2GRAY);
+
+        Utils.matToBitmap(dst, selectbp);
+        myImageView.setImageBitmap(selectbp);
+    }
+
+    //Sobel算子 边缘检测
+    private void sobel() {
+        Mat src = new Mat();
+        Mat gx = new Mat();
+        Mat gy = new Mat();
+        Mat dst = new Mat();
+
+        Utils.bitmapToMat(selectbp, src);
+
+        Imgproc.Sobel(src, gx, CV_32F, 1, 0);//x方向求导
+        Imgproc.Sobel(src, gy, CV_32F, 0, 1);//y方向求导
+
+        Core.subtract(gx, gy, dst);
+        Core.convertScaleAbs(dst, dst);
+
+        Utils.matToBitmap(dst, selectbp);
+        myImageView.setImageBitmap(selectbp);
+    }
+
+    //均值滤波and二值化
+    private void blurAndThreshold() {
+        Mat src = new Mat();
+        Mat temp = new Mat();
+        Mat dst = new Mat();
+
+        Utils.bitmapToMat(selectbp, src);
+
+        Imgproc.blur(src, temp, new Size(9, 9));//均值滤波
+        Imgproc.threshold(temp, dst, 90, 255, Imgproc.THRESH_BINARY);
+
+        Utils.matToBitmap(dst, selectbp);
+        myImageView.setImageBitmap(selectbp);
+    }
+
+    //获取图片结构元素
+    private void structure() {
+        Mat src = new Mat();
+        Mat dst = new Mat();
+
+        Utils.bitmapToMat(selectbp, src);
+
+        Mat structuringElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(55, 55));//调参
+        Imgproc.morphologyEx(src, dst, Imgproc.MORPH_CLOSE, structuringElement);
+
+        Utils.matToBitmap(dst, selectbp);
+        myImageView.setImageBitmap(selectbp);
+    }
+
+    //腐蚀膨胀
+    private void erodeAndDilate() {
+        Mat src = new Mat();
+        Mat temp = new Mat();
+        Mat dst = new Mat();
+        Mat kernel = new Mat();
+
+        Utils.bitmapToMat(selectbp, src);
+
+        Imgproc.erode(src, temp, kernel, new Point(-1, -1), 12);
+        Imgproc.dilate(temp, dst, kernel, new Point(-1, -1), 12);
+    }
+
+    //轮廓检测
+    private Bitmap findContours(Mat origin) {
+        Mat src = new Mat();
+        Mat temp = new Mat();
+        Mat dst = new Mat();
+        Mat img = new Mat();
+
+        Utils.bitmapToMat(selectbp, src);
+
         Imgproc.cvtColor(src, temp, Imgproc.COLOR_BGRA2BGR);
-        Imgproc.cvtColor(temp, dst, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.cvtColor(temp, img, Imgproc.COLOR_BGR2GRAY);
 
         List<MatOfPoint> contours = new ArrayList<>();
         Mat hierarchy = new Mat();
         //轮廓检测
-        Imgproc.findContours(dst, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+        Imgproc.findContours(img, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
         List<MatOfPoint2f> newContours = new ArrayList<>();
         for (MatOfPoint point : contours) {
@@ -109,156 +280,110 @@ public class MainActivity extends AppCompatActivity {
             newContours.add(newPoint);
         }
         //绘制轮廓
-        Mat result =new Mat(dst.size(), CV_8UC3, new Scalar(0));
-        Imgproc.drawContours(result, contours, -1, new Scalar(255,255,255), 1);
-        Mat result_boundingRect = result.clone();
-
-        //conPoint存储计算得到的外接多边形
-        Vector<Vector<MatOfPoint2f>> conPoint =new Vector<>();
-        conPoint.setSize(contours.size());
+        Mat result = new Mat(img.size(), CV_8UC3, new Scalar(0));
+        Imgproc.drawContours(result, contours, -1, new Scalar(255, 255, 255), 1);
 
         //boundRect存储计算得到的最小立式矩形
         Vector<Rect> boundRect = new Vector<>();
         boundRect.setSize(contours.size());
 
-        for (int i = 0; i < contours.size(); i++)
-        {
-
-//           // 计算外接多边形
-//          conPoint.set(i,approxPolyDP(newContours.get(i), conPoint.get(i).get(i), 3, true);
-
+        for (int i = 0; i < contours.size(); i++) {
             // 计算最小外接立式矩形
             boundRect.set(i, boundingRect(contours.get(i)));
         }
 
-        for (int i = 0; i< contours.size(); i++)
-        {
+        for (int i = 0; i < contours.size(); i++) {
             Scalar color = new Scalar(0, 255, 255);
             // 绘制最小外接立式矩形
-            rectangle(result_boundingRect, boundRect.get(i).tl(), boundRect.get(i).br(), color, 5, 8, 0);
-
+            rectangle(origin, boundRect.get(i).tl(), boundRect.get(i).br(), color, 5, 8, 0);
         }
-        Utils.matToBitmap(result_boundingRect, selectbp);
-        myImageView.setImageBitmap(selectbp);
+
+        List<Mat> cutResult = cut(origin, boundRect);
+        Mat mat = cutResult.get(0);
+
+        Size size = new Size(1600, 1200);
+        resize(mat, dst, size, 0, 0, INTER_LINEAR);
+
+        Mat tilt = tiltCorrection(dst);
+
+        Bitmap bitmap1 = Bitmap.createBitmap(tilt.width(), tilt.height(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(tilt, bitmap1);
+
+        return bitmap1;
     }
 
-    private void step5() {
-        Mat src = new Mat();
-        Mat dst = new Mat();
-        Mat temp = new Mat();
-        Mat img = new Mat();
+    /**
+     * 倾斜校正
+     *
+     * @param qx_image
+     * @return
+     */
+    private Mat tiltCorrection(Mat qx_image) {
+        Mat grayTemp = new Mat();
+        Mat gray = new Mat();
 
-        Utils.bitmapToMat(selectbp, src);
-        Imgproc.cvtColor(src,temp,Imgproc.COLOR_BGRA2BGR);
-        Imgproc.cvtColor(temp, img, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.cvtColor(qx_image, grayTemp, COLOR_BGRA2BGR);
+        Imgproc.cvtColor(grayTemp, gray, COLOR_BGR2GRAY);
 
-        List<MatOfPoint> matOfPoints = new ArrayList<MatOfPoint>();
+        Core.bitwise_not(gray, gray);
+
+        Mat threshold = new Mat();
+        double thresholdResult = Imgproc.threshold(gray, threshold, 0, 255, THRESH_BINARY);
+        System.out.println("thresholdResult:" + thresholdResult);
+
+        List<MatOfPoint> contours = new ArrayList<>();
         Mat hierarchy = new Mat();
-        Imgproc.findContours(img, matOfPoints, hierarchy, Imgproc.RETR_CCOMP, CHAIN_APPROX_SIMPLE);
+        //轮廓检测
+        Imgproc.findContours(threshold, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
-        MatOfPoint2f matOfPoint2fSrc = null, matOfPoint2fDst = null;
-        Scalar scalar = new Scalar(0, 255, 0);
-        //Imgproc.minAreaRect()
+        System.out.println("contours.size()->" + contours.size());
 
-        for (int i = 0; i < matOfPoints.size(); i++) {
-            MatOfPoint matOfPoint = matOfPoints.get(i);
+        MatOfPoint matOfPoint = contours.get(0);
+        RotatedRect rect = Imgproc.minAreaRect(new MatOfPoint2f(matOfPoint.toArray()));
+        double angle = rect.angle;
 
-            matOfPoint.convertTo(matOfPoint2fSrc,CvType.CV_32FC2);
-            approxPolyDP(matOfPoint2fSrc,matOfPoint2fDst,0.01*Imgproc.arcLength(matOfPoint2fSrc,true),true);
+        System.out.println("angle:" + angle);
 
-            matOfPoint2fDst.convertTo(matOfPoint,CvType.CV_32S);
-            Imgproc.drawContours(dst, matOfPoints, i, scalar, 2, 8, hierarchy, 0, new Point());
+        if (angle < -45) {
+            angle = -(90 + angle);
+        } else {
+            angle = -angle;
         }
 
-        Utils.matToBitmap(dst,selectbp);
-        myImageView.setImageBitmap(selectbp);
-    }
+        int width = threshold.width();
+        int height = threshold.height();
+        Point center = new Point(width / 2, height / 2);
 
-    private void step4() {
-        Mat src = new Mat();
+        Mat M = Imgproc.getRotationMatrix2D(center, angle, 1.0);
         Mat dst = new Mat();
-        Utils.bitmapToMat(selectbp, src);
+        Imgproc.warpAffine(qx_image, dst, M, new Size(height, width));
 
-        Mat structuringElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(25, 25));
-        Imgproc.morphologyEx(src, dst, Imgproc.MORPH_CLOSE, structuringElement);
-
-        Utils.matToBitmap(dst,selectbp);
-        myImageView.setImageBitmap(selectbp);
+        return dst;
     }
 
-    private void blurAndThreshold() {
-        Mat src = new Mat();
-        Mat tmp = new Mat();
-        Mat dst = new Mat();
-        Utils.bitmapToMat(selectbp, src);
+    private List<Mat> cut(Mat src, Vector<Rect> boundRect) {
+        List<Mat> result = new ArrayList<>();
 
-        Imgproc.blur(src, tmp, new Size(9, 9));
-        Imgproc.threshold(tmp, dst, 40, 255, Imgproc.THRESH_BINARY);
+        Collections.sort(boundRect, new Comparator<Rect>() {
+            @Override
+            public int compare(Rect t2, Rect t1) {
+                return Long.valueOf(t1.width * t1.height).compareTo(Long.valueOf(t1.width * t2.height));
+            }
+        });
 
-        Utils.matToBitmap(dst,selectbp);
-        myImageView.setImageBitmap(selectbp);
-    }
-
-    private void sobel() {
-        Mat src = new Mat();
-        Mat gx = new Mat();
-        Mat gy = new Mat();
-        Mat dst = new Mat();
-        Utils.bitmapToMat(selectbp, src);
-
-        Imgproc.Sobel(src,gx,-1,1,0);//x方向求导
-        Imgproc.Sobel(src,gy,-1,0,1);//x方向求导
-        Core.addWeighted(gx,0.5,gy,0.5,0,dst);
-        Utils.matToBitmap(dst,selectbp);
-        myImageView.setImageBitmap(selectbp);
-    }
-
-    private void convert2Gray() {
-        Mat src = new Mat();
+        Mat clone = src.clone();
+        Mat submat = clone.submat(boundRect.get(0));
         Mat temp = new Mat();
-        Mat dst = new Mat();
-        Utils.bitmapToMat(selectbp, src);
+        submat.copyTo(temp);
+        result.add(temp);
 
-        Imgproc.cvtColor(src,temp,Imgproc.COLOR_BGRA2BGR);
-        Imgproc.cvtColor(temp, dst, Imgproc.COLOR_BGR2GRAY);
-
-        Utils.matToBitmap(dst, selectbp);
-        myImageView.setImageBitmap(selectbp);
-    }
-
-    private void convertGray() {
-        Mat src = new Mat();
-        Mat temp = new Mat();
-        Mat dst = new Mat();
-        Mat mat = new Mat();
-        Utils.bitmapToMat(selectbp, src);
-        Imgproc.cvtColor(src, temp, Imgproc.COLOR_BGRA2BGR);
-        Log.i("CV", "image type:" + (temp.type() == CV_8UC3));
-        Imgproc.cvtColor(temp, dst, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.Canny(dst, mat, 60, 180);
-        Utils.matToBitmap(mat, selectbp);
-        myImageView.setImageBitmap(selectbp);
-    }
-
-    private void findThreshold() {
-        Mat dst = new Mat();
-        Mat src = new Mat();
-        Utils.bitmapToMat(selectbp, src);
-        Imgproc.threshold(src, dst, 0, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C);
-
-        Mat img = new Mat();
-        Size size = new Size(640, 480);
-        Imgproc.resize(dst, img, new Size(dst.width() * 1.5f, dst.height() * 1f));
-
-        //Imgproc.resize(dst, img, size, 0.5, 0.5, Imgproc.INTER_AREA);
-        Utils.matToBitmap(img, selectbp);
-        myImageView.setImageBitmap(selectbp);
+        return result;
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK) {
             Uri uri = data.getData();
             try {
                 Log.d("image-tag", "start to decode selected image now...");
@@ -290,6 +415,17 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        } else if (requestCode == REQUEST_LIST_CODE && resultCode == RESULT_OK) {
+            List<String> pathList = data.getStringArrayListExtra("result");
+
+            List<Uri> uris = new ArrayList<>();
+            for (String s : pathList) {
+                uris.add(Uri.parse("file://" + s));
+            }
+
+            this.selectImageList = uris2Bitmaps(uris);
+
+            multiView.setBitmaps(this.selectImageList);
         }
     }
 
@@ -307,8 +443,6 @@ public class MainActivity extends AppCompatActivity {
             switch (status) {
                 case LoaderCallbackInterface.SUCCESS: {
                     Log.i(TAG, "OpenCV loaded successfully");
-                    //  mOpenCvCameraView.enableView();
-//                    mOpenCvCameraView.setOnTouchListener(ColorBlobDetectionActivity.this);
                 }
                 break;
                 default: {
@@ -332,31 +466,43 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    boolean isTextImage(Bitmap bitmap, int width, int height) {
-        int y = 0;
-        int line = 0;
-        while (y < height) {
-            int x = 0;
-            int whiteNum = 0;
-            while (x < width) {
-                int pixel = bitmap.getPixel(x, y);
-                if (pixel == -1) {
-                    whiteNum++;
-                }
-                x++;
-            }
-            float scale = whiteNum / x;
-            if (scale > 0.15) {
-                line++;
-            }
-            y += 10;
+    public List<Bitmap> uris2Bitmaps(List<Uri> uris) {
+        List<Bitmap> res = new ArrayList<>();
+
+        for (Uri uri : uris) {
+            res.add(uri2Bitmap(uri));
         }
-        float ratio = line / height;
-        if (ratio > 0.4 && ratio < 1.0) {
-            Log.d(TAG, "isTextImage: 是是是是是是是！！");
-            return true;
-        }
-        Log.d(TAG, "isTextImage: 不是嘤嘤嘤");
-        return false;
+        return res;
     }
+
+    public Bitmap uri2Bitmap(Uri uri) {
+        try {
+            InputStream input = getContentResolver().openInputStream(uri);
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeStream(input, null, options);
+            int raw_width = options.outWidth;
+            int raw_height = options.outHeight;
+            int max = Math.max(raw_width, raw_height);
+            int newWidth = raw_width;
+            int newHeight = raw_height;
+            int inSampleSize = 1;
+            if (max > max_size) {
+                newWidth = raw_width / 2;
+                newHeight = raw_height / 2;
+                while ((newWidth / inSampleSize) > max_size || (newHeight / inSampleSize) > max_size) {
+                    inSampleSize *= 2;
+                }
+            }
+
+            options.inSampleSize = inSampleSize;
+            options.inJustDecodeBounds = false;
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+            return BitmapFactory.decodeStream(getContentResolver().openInputStream(uri), null, options);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }
