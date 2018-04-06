@@ -4,7 +4,7 @@ android {
     compileSdkVersion 25
     buildToolsVersion '26.0.2'
     defaultConfig {
-        applicationId "com.example.a18350.opencvtest"
+        applicationId "com.example.likexin.opencv"
         minSdkVersion 19
         targetSdkVersion 25
         versionCode 1
@@ -35,6 +35,9 @@ android {
         exclude 'META-INF/notice.txt'
         exclude 'META-INF/ASL2.0'
     }
+    configurations.all {
+        resolutionStrategy.force 'com.google.code.findbugs:jsr305:3.0.2'
+    }
 }
 
 dependencies {
@@ -49,7 +52,9 @@ dependencies {
     compile project(':openCVLibrary341')
     compile 'com.yuyh.imgsel:library:2.0.2'
     compile 'cn.lemon:multiview:1.0.1'
-//    compile 'com.itextpdf:itextpdf:5.5.13'
+    // https://mvnrepository.com/artifact/com.google.guava/guava
+    compile group: 'com.google.guava', name: 'guava', version: '24.0-android'
+
 
 
 //支持以下主流图片加载器，开发者自行选择
