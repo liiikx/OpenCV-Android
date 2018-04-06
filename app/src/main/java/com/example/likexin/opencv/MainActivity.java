@@ -177,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         Mat closing = closingImg(threshold);
         Mat canny = cannyImg(closing);
         Mat hough = houghImg(canny);
-        Vector<Rect> boundRect = findContours(origin, hough);
+        Vector<Rect> boundRect = findContours(origin, canny);
         Mat resize = resizeImg(origin, boundRect);
         Mat tiltCorrection = tiltCorrectionImg(resize);
         return mat2Bitmap(tiltCorrection);
