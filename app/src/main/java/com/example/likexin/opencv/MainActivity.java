@@ -34,10 +34,6 @@ import java.util.Vector;
 
 import cn.lemon.multi.MultiView;
 
-import static com.example.likexin.opencv.ImageProcess.*;
-import static com.example.likexin.opencv.MatTools.*;
-
-
 public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener {
     private double max_size = 1024;
     private int PICK_IMAGE_REQUEST = 1;
@@ -144,14 +140,14 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         processBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               // multiProcess();
+                // multiProcess();
                 singleProcess();
             }
         });
     }
 
     private void singleProcess() {
-        Bitmap bitmap = innerProcess(bitmap2Mat(this.selectbp));
+        Bitmap bitmap = innerProcess(MatTools.bitmap2Mat(this.selectbp));
         MainActivity.this.selectbp = bitmap;
         MainActivity.this.myImageView.setImageBitmap(bitmap);
     }
@@ -162,7 +158,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
 
         List<Bitmap> result = new ArrayList<>();
         for (Bitmap bitmap : selectImageList) {
-            result.add(innerProcess(bitmap2Mat(bitmap)));
+            result.add(innerProcess(MatTools.bitmap2Mat(bitmap)));
         }
         this.selectImageList = result;
 
@@ -171,16 +167,17 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
     }
 
     private Bitmap innerProcess(Mat origin) {
-        Mat gray = grayImg(origin);
-        Mat bilateralFilter = bilateralFilterImg(gray);
-        Mat threshold = thresholdImg(bilateralFilter);
-        Mat closing = closingImg(threshold);
-        Mat canny = cannyImg(closing);
-        Mat hough = houghImg(canny);
-        Vector<Rect> boundRect = findContours(origin, hough);
-        Mat resize = resizeImg(origin, boundRect);
-        Mat tiltCorrection = tiltCorrectionImg(resize);
-        return mat2Bitmap(tiltCorrection);
+        Mat gray = ImageProcess.grayImg(origin);
+        Mat bilateralFilter = ImageProcess.bilateralFilterImg(gray);
+        Mat thresholdImg = ImageProcess.thresholdImg(bilateralFilter);
+        Mat closingImg = ImageProcess.closingImg(thresholdImg);
+        Mat cannyImg = ImageProcess.cannyImg(closingImg);
+        Vector<Rect> boundRect = ImageProcess.findContours(origin, cannyImg);
+        Mat resizeImg = ImageProcess.resizeImg(origin, boundRect);
+//        Mat dst = ImageProcess.angleTransform(resizeImg);
+
+//        Mat tiltCorrectionImg = ImageProcess.tiltCorrectionImg(resizeImg);
+        return MatTools.mat2Bitmap(resizeImg);
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.example.likexin.opencv;
 
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
@@ -22,8 +23,10 @@ import static org.opencv.core.Core.BORDER_DEFAULT;
 import static org.opencv.core.CvType.CV_32F;
 import static org.opencv.core.CvType.CV_8UC3;
 import static org.opencv.imgproc.Imgproc.Canny;
+import static org.opencv.imgproc.Imgproc.HoughLines;
 import static org.opencv.imgproc.Imgproc.HoughLinesP;
 import static org.opencv.imgproc.Imgproc.INTER_LINEAR;
+import static org.opencv.imgproc.Imgproc.LINE_AA;
 import static org.opencv.imgproc.Imgproc.MORPH_CLOSE;
 import static org.opencv.imgproc.Imgproc.boundingRect;
 import static org.opencv.imgproc.Imgproc.line;
@@ -73,19 +76,6 @@ public class ImageProcess {
         return dst;
     }
 
-    //Hough变换
-    public static Mat houghImg(Mat src) {
-        Mat dst = src;
-        Mat lines = new Mat();
-        HoughLinesP(dst, lines, 1, Math.PI / 180, 50, 50.0, 10.0);
-        int[] a = new int[(int) lines.total() * lines.channels()]; //数组a存储检测出的直线端点坐标
-        lines.get(0, 0, a);
-        for (int i = 0; i < a.length; i += 4) {
-            line(dst, new Point(a[i], a[i + 1]), new Point(a[i + 2], a[i + 3]), new Scalar(255, 0, 255), 4);
-        }
-        return dst;
-    }
-
     //轮廓检测
     public static Vector<Rect> findContours(Mat origin, Mat src) {
         List<MatOfPoint> contours = new ArrayList<>();
@@ -98,10 +88,6 @@ public class ImageProcess {
             MatOfPoint2f newPoint = new MatOfPoint2f(point.toArray());
             newContours.add(newPoint);
         }
-        //绘制轮廓
-        Mat result = new Mat(src.size(), CV_8UC3, new Scalar(0));
-        Imgproc.drawContours(result, contours, -1, new Scalar(255, 255, 255), 1);
-
         //boundRect存储计算得到的最小立式矩形
         Vector<Rect> boundRect = new Vector<>();
         boundRect.setSize(contours.size());
@@ -110,13 +96,47 @@ public class ImageProcess {
             // 计算最小外接立式矩形
             boundRect.set(i, boundingRect(contours.get(i)));
         }
-
-        for (int i = 0; i < contours.size(); i++) {
-            Scalar color = new Scalar(0, 255, 255);
-            // 绘制最小外接立式矩形
-            rectangle(origin, boundRect.get(i).tl(), boundRect.get(i).br(), color, 5, 8, 0);
-        }
+        //绘制轮廓
+        Mat result = new Mat(src.size(), CV_8UC3, new Scalar(0));
+        Imgproc.drawContours(result, contours, -1, new Scalar(0, 255, 255), 1);
+//
+//        for (int i = 0; i < contours.size(); i++) {
+//            Scalar color = new Scalar(0, 255, 255);
+//            // 绘制最小外接立式矩形
+//            rectangle(origin, boundRect.get(i).tl(), boundRect.get(i).br(), color, 5, 8, 0);
+//        }
         return boundRect;
+    }
+
+    public static Mat angleTransform(Mat src) {
+        Mat gray = grayImg(src);
+        Mat bilateralFilter = bilateralFilterImg(gray);
+        Mat thresholdImg = thresholdImg(bilateralFilter);
+        Mat closingImg = closingImg(thresholdImg);
+        Mat cannyImg = cannyImg(closingImg);
+
+        Mat lines = new Mat();
+        float sum = 0;
+        Imgproc.HoughLines(cannyImg, lines, 1, Math.PI / 180, 2);
+        if (lines.rows() > 0 && lines.cols() > 0) {
+            for (int i = 0; i < lines.rows(); i++) {
+                double[] line = lines.get(i, 0);
+                double rho = line[0];
+                double theta = line[1];
+                double a = Math.cos(theta);
+                double b = Math.sin(theta);
+                double x0 = a * rho;
+                double y0 = b * rho;
+
+                sum += theta;
+
+                Point pt1 = new Point(x0 + 1000 * (-b), y0 + 1000 * a);
+                Point pt2 = new Point(x0 - 1000 * (-b), y0 - 1000 * a);
+
+                Imgproc.line(src, pt1, pt2, new Scalar(0, 0, 255), 1);
+            }
+        }
+        return src;
     }
 
     /**
