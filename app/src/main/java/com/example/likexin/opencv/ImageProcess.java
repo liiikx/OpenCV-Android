@@ -93,11 +93,6 @@ public class ImageProcess {
         //轮廓检测
         Imgproc.findContours(src, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
-        List<MatOfPoint2f> newContours = new ArrayList<>();
-        for (MatOfPoint point : contours) {
-            MatOfPoint2f newPoint = new MatOfPoint2f(point.toArray());
-            newContours.add(newPoint);
-        }
         //绘制轮廓
         Mat result = new Mat(src.size(), CV_8UC3, new Scalar(0));
         Imgproc.drawContours(result, contours, -1, new Scalar(255, 255, 255), 1);
@@ -125,7 +120,7 @@ public class ImageProcess {
      * @param src
      * @return
      */
-    public static Mat tiltCorrectionImg(Mat src) {
+    public static Mat angleTransform(Mat src) {
         Mat gray = grayImg(src);
         Core.bitwise_not(gray, gray);
 
@@ -136,6 +131,17 @@ public class ImageProcess {
         //轮廓检测
         Imgproc.findContours(threshold, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
+//        List<MatOfPoint2f> newContours = new ArrayList<>();
+//        for (MatOfPoint point : contours) {
+//            MatOfPoint2f newPoint = new MatOfPoint2f(point.toArray());
+//            newContours.add(newPoint);
+//        }
+//        for (int i = 0; i < newContours.size(); i++) {
+//            RotatedRect rect = Imgproc.minAreaRect(newContours.get(i));
+//            Mat points = new Mat();
+//            Imgproc.boxPoints(rect, points);
+//            double angle=rect.angle;
+//        }
         RotatedRect rect = Imgproc.minAreaRect(new MatOfPoint2f(contours.get(0).toArray()));
         double agvAngle = rect.angle;
         if (agvAngle < -45) {

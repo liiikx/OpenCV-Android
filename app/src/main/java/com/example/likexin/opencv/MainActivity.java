@@ -176,10 +176,9 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         Mat threshold = thresholdImg(bilateralFilter);
         Mat closing = closingImg(threshold);
         Mat canny = cannyImg(closing);
-        Mat hough = houghImg(canny);
         Vector<Rect> boundRect = findContours(origin, canny);
         Mat resize = resizeImg(origin, boundRect);
-        Mat tiltCorrection = tiltCorrectionImg(resize);
+        Mat tiltCorrection = angleTransform(resize);
         return mat2Bitmap(tiltCorrection);
     }
 
