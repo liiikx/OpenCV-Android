@@ -3,22 +3,15 @@ package com.example.likexin.opencv;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SeekBar;
-
-import com.yuyh.library.imgsel.ISNav;
-import com.yuyh.library.imgsel.config.ISListConfig;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -34,8 +27,16 @@ import java.util.Vector;
 
 import cn.lemon.multi.MultiView;
 
-import static com.example.likexin.opencv.ImageProcess.*;
-import static com.example.likexin.opencv.MatTools.*;
+import static com.example.likexin.opencv.ImageProcess.angleTransform;
+import static com.example.likexin.opencv.ImageProcess.bilateralFilterImg;
+import static com.example.likexin.opencv.ImageProcess.cannyImg;
+import static com.example.likexin.opencv.ImageProcess.closingImg;
+import static com.example.likexin.opencv.ImageProcess.findContours;
+import static com.example.likexin.opencv.ImageProcess.grayImg;
+import static com.example.likexin.opencv.ImageProcess.resizeImg;
+import static com.example.likexin.opencv.ImageProcess.thresholdImg;
+import static com.example.likexin.opencv.MatTools.bitmap2Mat;
+import static com.example.likexin.opencv.MatTools.mat2Bitmap;
 
 
 public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener {
@@ -63,20 +64,20 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         myImageView = (ImageView) findViewById(R.id.imageView);
         myImageView.setScaleType(ImageView.ScaleType.CENTER);
 
-        mListView = (ListView) findViewById(R.id.listView);
-        mListView.setItemsCanFocus(false);
-        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                System.out.println(position);
-
-                System.out.println(id);
-            }
-        });
-
-        multiView = (MultiView) findViewById(R.id.multi_view);
-        multiView.setLayoutParams(new LinearLayout.LayoutParams(900, ViewGroup.LayoutParams.WRAP_CONTENT));
-
+//        mListView = (ListView) findViewById(R.id.listView);
+//        mListView.setItemsCanFocus(false);
+//        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//            @Override
+//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//                System.out.println(position);
+//
+//                System.out.println(id);
+//            }
+//        });
+//
+//        multiView = (MultiView) findViewById(R.id.multi_view);
+//        multiView.setLayoutParams(new LinearLayout.LayoutParams(900, ViewGroup.LayoutParams.WRAP_CONTENT));
+//
         sxBar = (SeekBar) findViewById(R.id.seekbar0);
         bhdBar = (SeekBar) findViewById(R.id.seekbar1);
         ldBar = (SeekBar) findViewById(R.id.seekbar2);
@@ -89,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         ldBar.setOnSeekBarChangeListener(this);
         ldBar.setMax(MAX_COLOR);
         ldBar.setProgress(MIN_COLOR);
-
+//
         Button selectImageBtn = (Button) findViewById(R.id.select);
         selectImageBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -97,48 +98,48 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
                 selectImage();
             }
         });
-
-        Button multipleSelectBtn = (Button) findViewById(R.id.multipleSelect);
-        multipleSelectBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                selectMultipleImage();
-            }
-
-            private void selectMultipleImage() {
-                // 自由配置选项
-                ISListConfig config = new ISListConfig.Builder()
-                        // 是否多选, 默认true
-                        .multiSelect(true)
-                        // 是否记住上次选中记录, 仅当multiSelect为true的时候配置，默认为true
-                        .rememberSelected(false)
-                        // “确定”按钮背景色
-                        .btnBgColor(Color.GRAY)
-                        // “确定”按钮文字颜色
-                        .btnTextColor(Color.BLUE)
-                        // 使用沉浸式状态栏
-                        .statusBarColor(Color.parseColor("#3F51B5"))
-                        // 返回图标ResId
-                        //.backResId(android.support.v7.appcompat.R.drawable.abc_ic_ab_back_mtrl_am_alpha)
-                        // 标题
-                        .title("图片")
-                        // 标题文字颜色
-                        .titleColor(Color.WHITE)
-                        // TitleBar背景色
-                        .titleBgColor(Color.parseColor("#3F51B5"))
-                        // 裁剪大小。needCrop为true的时候配置
-                        .cropSize(1, 1, 200, 200)
-                        .needCrop(true)
-                        // 第一个是否显示相机，默认true
-                        .needCamera(false)
-                        // 最大选择图片数量，默认9
-                        .maxNum(9)
-                        .build();
-
-                // 跳转到图片选择器
-                ISNav.getInstance().toListActivity(MainActivity.this, config, REQUEST_LIST_CODE);
-            }
-        });
+//
+//        Button multipleSelectBtn = (Button) findViewById(R.id.multipleSelect);
+//        multipleSelectBtn.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                selectMultipleImage();
+//            }
+//
+//            private void selectMultipleImage() {
+//                // 自由配置选项
+//                ISListConfig config = new ISListConfig.Builder()
+//                        // 是否多选, 默认true
+//                        .multiSelect(true)
+//                        // 是否记住上次选中记录, 仅当multiSelect为true的时候配置，默认为true
+//                        .rememberSelected(false)
+//                        // “确定”按钮背景色
+//                        .btnBgColor(Color.GRAY)
+//                        // “确定”按钮文字颜色
+//                        .btnTextColor(Color.BLUE)
+//                        // 使用沉浸式状态栏
+//                        .statusBarColor(Color.parseColor("#3F51B5"))
+//                        // 返回图标ResId
+//                        //.backResId(android.support.v7.appcompat.R.drawable.abc_ic_ab_back_mtrl_am_alpha)
+//                        // 标题
+//                        .title("图片")
+//                        // 标题文字颜色
+//                        .titleColor(Color.WHITE)
+//                        // TitleBar背景色
+//                        .titleBgColor(Color.parseColor("#3F51B5"))
+//                        // 裁剪大小。needCrop为true的时候配置
+//                        .cropSize(1, 1, 200, 200)
+//                        .needCrop(true)
+//                        // 第一个是否显示相机，默认true
+//                        .needCamera(false)
+//                        // 最大选择图片数量，默认9
+//                        .maxNum(9)
+//                        .build();
+//
+//                // 跳转到图片选择器
+//                ISNav.getInstance().toListActivity(MainActivity.this, config, REQUEST_LIST_CODE);
+//            }
+//        });
 
         Button processBtn = (Button) findViewById(R.id.process);
         processBtn.setOnClickListener(new View.OnClickListener() {
@@ -257,7 +258,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
 
     @Override
     protected void onResume() {
-        System.out.println("likexin");
+        System.out.println("likexinTest");
         super.onResume();
         if (!OpenCVLoader.initDebug()) {
             Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");

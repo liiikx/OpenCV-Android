@@ -21,28 +21,64 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <ListView
-        android:id="@+id/listView"
-        android:layout_width="match_parent"
-        android:layout_height="100dp" />
+    <!--<ListView-->
+    <!--android:id="@+id/listView"-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="100dp" />-->
 
-    <SeekBar
-        android:id="@+id/seekbar0"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="20dp"
-        />
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
 
-    <SeekBar
-        android:id="@+id/seekbar1"
-        android:layout_width="match_parent"
-        android:layout_height="20dp"
-        />
+        <TextView
+            android:layout_width="43sp"
+            android:layout_height="25sp"
+            android:text="色调:"
+            android:textAlignment="viewStart"
+            android:textSize="12sp" />
 
-    <SeekBar
-        android:id="@+id/seekbar2"
+        <SeekBar
+            android:id="@+id/seekbar0"
+            android:layout_width="match_parent"
+            android:layout_height="20dp" />
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="20dp"
-        />
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="150px"
+            android:layout_height="25sp"
+            android:text="饱和度:"
+            android:textAlignment="viewStart"
+            android:textSize="12sp" />
+
+        <SeekBar
+            android:id="@+id/seekbar1"
+            android:layout_width="match_parent"
+            android:layout_height="20dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="149px"
+            android:layout_height="25sp"
+            android:text="亮度:"
+            android:textAlignment="viewStart"
+            android:textSize="12sp" />
+
+        <SeekBar
+            android:id="@+id/seekbar2"
+            android:layout_width="match_parent"
+            android:layout_height="20dp" />
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -53,28 +89,27 @@
             android:id="@+id/select"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="选择" />
+            android:elevation="0dp"
+            android:text="选择"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
 
-        <Button
-            android:id="@+id/multipleSelect"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="多选" />
+        <!--<Button-->
+        <!--android:id="@+id/multipleSelect"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:fontFamily="casual"-->
+        <!--android:text="多选"-->
+        <!--android:textAppearance="@style/TextAppearance.AppCompat.Caption"-->
+        <!--android:typeface="monospace" />-->
 
         <Button
             android:id="@+id/process"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="处理" />
-
-        <TextView
-            android:id="@+id/text_result"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:paddingLeft="10dp"
-            android:text=""
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:fontFamily="casual"
+            android:text="处理"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:typeface="monospace" />
     </LinearLayout>
 
 </LinearLayout>

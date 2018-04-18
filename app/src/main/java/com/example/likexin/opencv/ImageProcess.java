@@ -131,17 +131,17 @@ public class ImageProcess {
         //轮廓检测
         Imgproc.findContours(threshold, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
-//        List<MatOfPoint2f> newContours = new ArrayList<>();
-//        for (MatOfPoint point : contours) {
-//            MatOfPoint2f newPoint = new MatOfPoint2f(point.toArray());
-//            newContours.add(newPoint);
-//        }
-//        for (int i = 0; i < newContours.size(); i++) {
-//            RotatedRect rect = Imgproc.minAreaRect(newContours.get(i));
-//            Mat points = new Mat();
-//            Imgproc.boxPoints(rect, points);
-//            double angle=rect.angle;
-//        }
+        List<MatOfPoint2f> newContours = new ArrayList<>();
+        for (MatOfPoint point : contours) {
+            MatOfPoint2f newPoint = new MatOfPoint2f(point.toArray());
+            newContours.add(newPoint);
+        }
+        for (int i = 0; i < newContours.size(); i++) {
+            RotatedRect rect = Imgproc.minAreaRect(newContours.get(i));
+            Mat points = new Mat();
+            Imgproc.boxPoints(rect, points);
+            double angle=rect.angle;
+        }
         RotatedRect rect = Imgproc.minAreaRect(new MatOfPoint2f(contours.get(0).toArray()));
         double agvAngle = rect.angle;
         if (agvAngle < -45) {
