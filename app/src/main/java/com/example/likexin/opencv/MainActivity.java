@@ -1,10 +1,13 @@
 package com.example.likexin.opencv;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.MemoryFile;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -19,13 +22,22 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 import org.opencv.core.Rect;
 
-import java.io.FileNotFoundException;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
 import cn.lemon.multi.MultiView;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Headers;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 import static com.example.likexin.opencv.ImageProcess.angleTransform;
 import static com.example.likexin.opencv.ImageProcess.bilateralFilterImg;
@@ -47,6 +59,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
     private ListView mListView;
     private MultiView multiView;
     private Bitmap selectbp;
+    private Context context = this;
 
     private SeekBar sxBar, bhdBar, ldBar;
     private static int MIN_COLOR = 160;
@@ -64,20 +77,6 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         myImageView = (ImageView) findViewById(R.id.imageView);
         myImageView.setScaleType(ImageView.ScaleType.CENTER);
 
-//        mListView = (ListView) findViewById(R.id.listView);
-//        mListView.setItemsCanFocus(false);
-//        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//            @Override
-//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//                System.out.println(position);
-//
-//                System.out.println(id);
-//            }
-//        });
-//
-//        multiView = (MultiView) findViewById(R.id.multi_view);
-//        multiView.setLayoutParams(new LinearLayout.LayoutParams(900, ViewGroup.LayoutParams.WRAP_CONTENT));
-//
         sxBar = (SeekBar) findViewById(R.id.seekbar0);
         bhdBar = (SeekBar) findViewById(R.id.seekbar1);
         ldBar = (SeekBar) findViewById(R.id.seekbar2);
@@ -98,55 +97,53 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
                 selectImage();
             }
         });
-//
-//        Button multipleSelectBtn = (Button) findViewById(R.id.multipleSelect);
-//        multipleSelectBtn.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                selectMultipleImage();
-//            }
-//
-//            private void selectMultipleImage() {
-//                // 自由配置选项
-//                ISListConfig config = new ISListConfig.Builder()
-//                        // 是否多选, 默认true
-//                        .multiSelect(true)
-//                        // 是否记住上次选中记录, 仅当multiSelect为true的时候配置，默认为true
-//                        .rememberSelected(false)
-//                        // “确定”按钮背景色
-//                        .btnBgColor(Color.GRAY)
-//                        // “确定”按钮文字颜色
-//                        .btnTextColor(Color.BLUE)
-//                        // 使用沉浸式状态栏
-//                        .statusBarColor(Color.parseColor("#3F51B5"))
-//                        // 返回图标ResId
-//                        //.backResId(android.support.v7.appcompat.R.drawable.abc_ic_ab_back_mtrl_am_alpha)
-//                        // 标题
-//                        .title("图片")
-//                        // 标题文字颜色
-//                        .titleColor(Color.WHITE)
-//                        // TitleBar背景色
-//                        .titleBgColor(Color.parseColor("#3F51B5"))
-//                        // 裁剪大小。needCrop为true的时候配置
-//                        .cropSize(1, 1, 200, 200)
-//                        .needCrop(true)
-//                        // 第一个是否显示相机，默认true
-//                        .needCamera(false)
-//                        // 最大选择图片数量，默认9
-//                        .maxNum(9)
-//                        .build();
-//
-//                // 跳转到图片选择器
-//                ISNav.getInstance().toListActivity(MainActivity.this, config, REQUEST_LIST_CODE);
-//            }
-//        });
 
         Button processBtn = (Button) findViewById(R.id.process);
         processBtn.setOnClickListener(new View.OnClickListener() {
             @Override
+            public void onClick(View v) {singleProcess();}
+        });
+
+        Button saveBtn = (Button) findViewById(R.id.save);
+        saveBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
             public void onClick(View v) {
-               // multiProcess();
-                singleProcess();
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                selectbp.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+                byte[] arrayByte = byteArrayOutputStream.toByteArray();
+
+                OkHttpClient client = new OkHttpClient();
+                MediaType mediaType = MediaType.parse("application/octet-stream");
+                RequestBody requestBody = RequestBody.create(mediaType, arrayByte);
+
+                MultipartBody body = new MultipartBody.Builder().setType(MultipartBody.ALTERNATIVE)
+                        .addPart(Headers.of("Content-Disposition", "form-data;" +
+                                "name=\"file\";filename=\"ocr.jpg\""), requestBody)
+                        .build();
+
+                Request request = new Request.Builder().url("http://192.168.1.64:8080/ocr/image2pdf")
+                        .addHeader("User-Agent", "android")
+                        .header("Content-Type", "text/html; charset=utf-8;")
+                        .post(body)
+                        .build();
+
+                client.newCall(request).enqueue(new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        Log.i("save", "message:" + e);
+                    }
+
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        byte[] bytes = response.body().bytes();
+                        if (response.isSuccessful()) {
+                            String filePath= Environment.getExternalStorageState();
+                            long time = System.currentTimeMillis();
+                            String fileName = time + "处理结果";
+                            PdfTools.savePDF(bytes, filePath, fileName, context);
+                        }
+                    }
+                });
             }
         });
     }
@@ -155,20 +152,6 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         Bitmap bitmap = innerProcess(bitmap2Mat(this.selectbp));
         MainActivity.this.selectbp = bitmap;
         MainActivity.this.myImageView.setImageBitmap(bitmap);
-    }
-
-    //选多张图片，嘤不会写
-    private void multiProcess() {
-        List<Bitmap> selectImageList = this.selectImageList;
-
-        List<Bitmap> result = new ArrayList<>();
-        for (Bitmap bitmap : selectImageList) {
-            result.add(innerProcess(bitmap2Mat(bitmap)));
-        }
-        this.selectImageList = result;
-
-        multiView.clear();
-        multiView.setBitmaps(this.selectImageList);
     }
 
     private Bitmap innerProcess(Mat origin) {
@@ -218,17 +201,6 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        } else if (requestCode == REQUEST_LIST_CODE && resultCode == RESULT_OK) {
-            List<String> pathList = data.getStringArrayListExtra("result");
-
-            List<Uri> uris = new ArrayList<>();
-            for (String s : pathList) {
-                uris.add(Uri.parse("file://" + s));
-            }
-
-            this.selectImageList = uris2Bitmaps(uris);
-            multiView.clear();
-            multiView.setBitmaps(this.selectImageList);
         }
     }
 
@@ -267,45 +239,6 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
-    }
-
-    public List<Bitmap> uris2Bitmaps(List<Uri> uris) {
-        List<Bitmap> res = new ArrayList<>();
-
-        for (Uri uri : uris) {
-            res.add(uri2Bitmap(uri));
-        }
-        return res;
-    }
-
-    public Bitmap uri2Bitmap(Uri uri) {
-        try {
-            InputStream input = getContentResolver().openInputStream(uri);
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inJustDecodeBounds = true;
-            BitmapFactory.decodeStream(input, null, options);
-            int raw_width = options.outWidth;
-            int raw_height = options.outHeight;
-            int max = Math.max(raw_width, raw_height);
-            int newWidth = raw_width;
-            int newHeight = raw_height;
-            int inSampleSize = 1;
-            if (max > max_size) {
-                newWidth = raw_width / 2;
-                newHeight = raw_height / 2;
-                while ((newWidth / inSampleSize) > max_size || (newHeight / inSampleSize) > max_size) {
-                    inSampleSize *= 2;
-                }
-            }
-
-            options.inSampleSize = inSampleSize;
-            options.inJustDecodeBounds = false;
-            options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-            return BitmapFactory.decodeStream(getContentResolver().openInputStream(uri), null, options);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 
     @Override

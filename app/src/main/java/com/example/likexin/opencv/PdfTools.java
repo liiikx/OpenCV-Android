@@ -1,11 +1,14 @@
 package com.example.likexin.opencv;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Environment;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 
@@ -14,34 +17,46 @@ import java.util.List;
  */
 
 public class PdfTools {
-    //转pdf
-    private void writePDF(List<Bitmap> bitmapList) {
+    //保存pdf文件
+    public static void savePDF(byte[] bytes, String path, String name, Context context) {
+        BufferedOutputStream bufferedOutputStream = null;
+        FileOutputStream fileOutputStream = null;
+
         try {
-            if (null != bitmapList && bitmapList.size() > 0) {
-//                Document doc = new Document();
-//
-//                File parentPath = Environment.getExternalStorageDirectory();
-//                File file = new File(parentPath.getAbsoluteFile(), System.currentTimeMillis() + "处理结果Result.pdf");
-//                file.createNewFile();
-//
-//                FileOutputStream fos = new FileOutputStream(file);
-//                PdfWriter.getInstance(doc, fos);
-//                doc.open();
-//                doc.setPageCount(1);
-//                for (Bitmap bitmap : bitmapList) {
-//                    doc.add(Image.getInstance(bitmat2Bytes(bitmap)));
-//                }
-//                fos.flush();
-//                fos.close();
+            File catalog = new File(path);
+            if (!catalog.exists()) {
+                catalog.mkdirs();
             }
+            File file = new File(path, name);
+            if (file.exists()) {
+                file.delete();
+            }
+
+//            fileOutputStream = new FileOutputStream(file);
+//            bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
+//            //写入SD卡
+//            bufferedOutputStream.write(bytes);
+
+            fileOutputStream = context.openFileOutput(name, Context.MODE_PRIVATE);
+            fileOutputStream.write(bytes);
+
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            if (bufferedOutputStream != null) {
+                try {
+                    bufferedOutputStream.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            if (fileOutputStream != null) {
+                try {
+                    fileOutputStream.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         }
-    }
-
-    private byte[] bitmat2Bytes(Bitmap bitmap) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
-        return baos.toByteArray();
     }
 }
