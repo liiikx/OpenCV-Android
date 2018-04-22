@@ -1,6 +1,5 @@
 package com.example.likexin.opencv;
 
-import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
@@ -18,8 +17,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Vector;
 
-import static org.opencv.core.Core.BORDER_DEFAULT;
-import static org.opencv.core.CvType.CV_32F;
 import static org.opencv.core.CvType.CV_8UC3;
 import static org.opencv.imgproc.Imgproc.Canny;
 import static org.opencv.imgproc.Imgproc.HoughLinesP;

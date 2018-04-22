@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.example.likexin.opencv.ProcessActivity">
+
+    <ImageView
+        android:layout_marginBottom="20dp"
+        android:id="@+id/imageView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="3sp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginLeft="2sp"
+            android:background="@drawable/contrast"
+            android:textAlignment="viewStart"
+            android:textSize="10sp" />
+
+        <SeekBar
+            android:id="@+id/seekbar0"
+            android:layout_width="match_parent"
+            android:layout_height="20dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="2sp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:layout_marginLeft="4sp"
+            android:background="@drawable/saturation"
+            android:textAlignment="viewStart"
+            android:textSize="8sp" />
+
+        <SeekBar
+            android:id="@+id/seekbar1"
+            android:layout_width="match_parent"
+            android:layout_height="20dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_marginBottom="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="2sp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginLeft="2sp"
+            android:background="@drawable/big_bright"
+            android:textAlignment="viewStart"
+            android:textSize="12sp" />
+
+        <SeekBar
+            android:id="@+id/seekbar2"
+            android:layout_width="match_parent"
+            android:layout_height="20dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#F5F5F5">
+
+        <Button
+            android:id="@+id/process"
+            android:layout_width="33dp"
+            android:layout_height="30dp"
+            android:layout_marginLeft="90dp"
+            android:background="@drawable/process_new" />
+
+        <Button
+            android:id="@+id/save"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginLeft="120dp"
+            android:background="@drawable/save_new"
+            android:fontFamily="casual"
+            android:textAlignment="center"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:typeface="monospace" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#F5F5F5">
+
+        <TextView
+            android:layout_width="150sp"
+            android:layout_height="20sp"
+            android:layout_marginLeft="85sp"
+            android:text="process" />
+
+        <TextView
+            android:layout_width="150sp"
+            android:layout_height="20sp"
+            android:layout_marginLeft="8sp"
+            android:text="save" />
+    </LinearLayout>
+</LinearLayout>

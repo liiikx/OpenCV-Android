@@ -1,15 +1,12 @@
 package com.example.likexin.opencv;
 
+import android.app.DownloadManager;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.os.Environment;
+import android.net.Uri;
 
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.List;
 
 
 /**
@@ -32,13 +29,13 @@ public class PdfTools {
                 file.delete();
             }
 
-//            fileOutputStream = new FileOutputStream(file);
-//            bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
-//            //写入SD卡
-//            bufferedOutputStream.write(bytes);
+            fileOutputStream = new FileOutputStream(file);
+            bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
+            //写入SD卡
+            bufferedOutputStream.write(bytes);
 
-            fileOutputStream = context.openFileOutput(name, Context.MODE_PRIVATE);
-            fileOutputStream.write(bytes);
+//            fileOutputStream = context.openFileOutput(name, Context.MODE_PRIVATE);
+//            fileOutputStream.write(bytes);
 
         } catch (Exception e) {
             e.printStackTrace();

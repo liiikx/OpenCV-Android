@@ -54,7 +54,7 @@ dependencies {
     compile 'cn.lemon:multiview:1.0.1'
     // https://mvnrepository.com/artifact/com.google.guava/guava
     compile group: 'com.google.guava', name: 'guava', version: '24.0-android'
-//    compile 'com.github.navasmdc:MaterialDesign:1.5@aar'
+    compile 'com.github.navasmdc:MaterialDesign:1.5@aar'
     implementation 'com.squareup.okhttp3:okhttp:3.10.0'
 
 
