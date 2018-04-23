@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Vector;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -103,7 +104,12 @@ public class ProcessActivity extends AppCompatActivity implements SeekBar.OnSeek
                 selectbp.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
                 byte[] arrayByte = byteArrayOutputStream.toByteArray();
 
-                OkHttpClient client = new OkHttpClient();
+                OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                        .readTimeout(30, TimeUnit.SECONDS)
+                        .writeTimeout(30, TimeUnit.SECONDS)
+                        .connectTimeout(30, TimeUnit.SECONDS);
+                OkHttpClient client = builder.build();
+
                 MediaType mediaType = MediaType.parse("application/octet-stream");
                 RequestBody requestBody = RequestBody.create(mediaType, arrayByte);
 
@@ -125,11 +131,10 @@ public class ProcessActivity extends AppCompatActivity implements SeekBar.OnSeek
                     }
 
                     @Override
-                    public void onResponse(Call call, Response response){
+                    public void onResponse(Call call, Response response) {
                         try {
                             byte[] bytes = response.body().bytes();
                             if (response.isSuccessful()) {
-    //                            String filePath = Environment.getExternalStorageState();
                                 File[] filePath = new File[0];
                                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
                                     filePath = ProcessActivity.this.getExternalMediaDirs();
